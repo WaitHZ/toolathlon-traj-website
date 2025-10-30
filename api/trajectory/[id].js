@@ -1,14 +1,13 @@
-
 import fs from 'fs';
 import path from 'path';
 
 export default function handler(req, res) {
-  let { id } = req.query;
+  let { id } = req.query;                  // 允许 "xxx" 或 "xxx.json"
   const filename = id.endsWith('.json') ? id : `${id}.json`;
 
   const candidates = [
     path.join(process.cwd(), 'trajs', filename),
-    path.join(process.cwd(), filename),
+    path.join(process.cwd(), filename),    // 兜底
   ];
   for (const p of candidates) {
     if (fs.existsSync(p)) {
