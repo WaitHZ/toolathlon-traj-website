@@ -631,7 +631,7 @@ class TrajectoryReplayer {
         this.updateButtonStates();
         
         try {
-            const response = await fetch(`/api/trajectory/${filename}`);
+            const response = await fetch(`/api/trajectory?id=${encodeURIComponent(filename)}`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
