@@ -1,15 +1,15 @@
+
 import fs from 'fs';
 import path from 'path';
 
 export default function handler(req, res) {
-  let { id } = req.query;                      // 可能是 "xxx" 或 "xxx.json"
+  let { id } = req.query;
   const filename = id.endsWith('.json') ? id : `${id}.json`;
 
   const candidates = [
     path.join(process.cwd(), 'trajs', filename),
-    path.join(process.cwd(), filename),        // 兜底：根目录
+    path.join(process.cwd(), filename),
   ];
-
   for (const p of candidates) {
     if (fs.existsSync(p)) {
       const buf = fs.readFileSync(p, 'utf-8');

@@ -13,10 +13,20 @@ class TrajectoryReplayer {
         this.isMobile = this.detectMobile(); // 检测是否为移动端
         
         this.initializeElements();
-        // 先尝试隐藏选择框（如果需要）
+        
+        // 从路径中尝试获取 <model>_<task>
+        if (typeof this.checkAutoLoadTrajectoryFromPath === 'function') {
+            this.checkAutoLoadTrajectoryFromPath();
+        }
+// 先尝试隐藏选择框（如果需要）
         this.checkAutoLoadTrajectory();
         this.initializeEventListeners();
-        // 检查URL路径，决定使用哪种选择框
+        
+        // 绑定下拉与URL同步
+        if (typeof this.bindUrlSync === 'function') {
+            this.bindUrlSync();
+        }
+// 检查URL路径，决定使用哪种选择框
         this.checkSelectorMode();
         // 如果没有自动加载轨迹，才加载文件列表
         if (!this.autoLoadTrajId) {
@@ -2010,3 +2020,45 @@ let trajectoryReplayer;
 document.addEventListener('DOMContentLoaded', () => {
     trajectoryReplayer = new TrajectoryReplayer();
 });
+
+// === URL Path <-> Select Sync helpers ===
+TrajectoryReplayer.prototype.checkAutoLoadTrajectoryFromPath = function() {
+  try {
+    const seg = (location.pathname || "/").replace(/^\/+|\/+$/g, "");
+    if (seg && !seg.includes(".")) {
+      this.autoLoadTrajId = seg; // e.g. "claude-4.5-sonnet_merge-hf-datasets"
+    }
+  } catch (e) { console.warn('path parse failed', e); }
+};
+
+TrajectoryReplayer.prototype.updateUrl = function(model, task) {
+  try {
+    if (!model) {
+      history.replaceState(null, "", "/");
+      return;
+    }
+    const path = task ? `/${model}_${task}` : `/${model}`;
+    history.replaceState(null, "", path);
+  } catch (e) { console.warn('updateUrl failed', e); }
+};
+
+TrajectoryReplayer.prototype.bindUrlSync = function() {
+  const modelSel = document.getElementById('model-selector');
+  const taskSel  = document.getElementById('task-selector');
+  if (modelSel) {
+    modelSel.addEventListener('change', () => {
+      const model = modelSel.value;
+      const filename = (taskSel && taskSel.value) || "";
+      const task = filename ? filename.replace(/^[^_]+_/, '').replace(/\.json$/, '') : null;
+      this.updateUrl(model, task);
+    });
+  }
+  if (taskSel) {
+    taskSel.addEventListener('change', () => {
+      const model = modelSel ? modelSel.value : null;
+      const filename = taskSel.value || "";
+      const task = filename ? filename.replace(/^[^_]+_/, '').replace(/\.json$/, '') : null;
+      if (model && task) this.updateUrl(model, task);
+    });
+  }
+};
