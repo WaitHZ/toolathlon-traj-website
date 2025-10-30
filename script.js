@@ -138,41 +138,56 @@ class TrajectoryReplayer {
     }
   
     async bootstrap() {
-      // 先加载 models
-      await this.loadModelsAndMaybeAutoSelect();
-  
-      // 如果 URL 中携带了 <model>_<task>，尝试自动加载
-      if (this.autoLoadTrajId && this.autoLoadTrajId.includes("_")) {
-        const [model, task] = this.autoLoadTrajId.split("_");
-        if (this.modelsData[model]) {
-          this.modelSelector.value = model;
-          await this.populateTaskSelector(model);
-          const filename = `${model}_${task}.json`;
-          // 如果该任务存在，选中并加载
-          const has = Array.from(this.taskSelector.options)
-            .some(opt => opt.value === filename);
-          if (has) {
-            this.taskSelector.value = filename;
-            await this.loadTrajectoryByFilename(filename);
+        // 1) 先加载模型列表
+        await this.loadModelsAndMaybeAutoSelect();
+      
+        // 2) 若 URL 中携带 <model>_<task>，强制按它来
+        if (this.autoLoadTrajId && this.autoLoadTrajId.includes("_")) {
+          const [modelFromUrl, taskFromUrl] = this.autoLoadTrajId.split("_");
+      
+          // 2.1 选中模型（若存在）
+          if (this.modelsData[modelFromUrl]) {
+            this.modelSelector.value = modelFromUrl;
+      
+            // 2.2 填充该模型的任务列表（await 确保已插入 DOM 选项）
+            await this.populateTaskSelector(modelFromUrl);
+      
+            // 2.3 计算文件名并尝试选中
+            const wantedFilename = `${modelFromUrl}_${taskFromUrl}.json`;
+            const opts = Array.from(this.taskSelector.options);
+            const hit = opts.find(o => o.value === wantedFilename);
+      
+            if (hit) {
+              this.taskSelector.value = wantedFilename;
+              // 2.4 立即加载该轨迹
+              await this.loadTrajectoryByFilename(wantedFilename);
+              this.updateButtonsAndProgress();
+              // 同步地址（保证格式统一）
+              this.updateUrl(modelFromUrl, taskFromUrl);
+              return; // 直接结束 bootstrap
+            }
+          }
+        }
+      
+        // 3) 否则默认选中第一个模型和它的第一个任务
+        const firstModel = Object.keys(this.modelsData)[0];
+        if (firstModel) {
+          this.modelSelector.value = firstModel;
+          await this.populateTaskSelector(firstModel);
+      
+          // 第 0 个是 “Select task...”，从第 1 个开始
+          if (this.taskSelector.options.length > 1) {
+            const firstFile = this.taskSelector.options[1].value;
+            this.taskSelector.value = firstFile;
+            await this.loadTrajectoryByFilename(firstFile);
             this.updateButtonsAndProgress();
-            return;
+      
+            // 同步地址
+            const task = firstFile.replace(/^[^_]+_/, "").replace(/\.json$/, "");
+            this.updateUrl(firstModel, task);
           }
         }
       }
-  
-      // 否则选中第一个模型/任务（若存在）
-      const firstModel = Object.keys(this.modelsData)[0];
-      if (firstModel) {
-        this.modelSelector.value = firstModel;
-        await this.populateTaskSelector(firstModel);
-        if (this.taskSelector.options.length > 1) {
-          const filename = this.taskSelector.options[1].value;
-          this.taskSelector.value = filename;
-          await this.loadTrajectoryByFilename(filename);
-          this.updateButtonsAndProgress();
-        }
-      }
-    }
   
     /* ---------------- 与后端交互 ---------------- */
   
@@ -202,22 +217,19 @@ class TrajectoryReplayer {
     }
   
     async populateTaskSelector(model) {
-      // 清空与禁用
-      this.taskSelector.innerHTML = '<option value="">Select task...</option>';
-      this.taskSelector.disabled = true;
-  
-      const tasks = this.modelsData[model] || [];
-      tasks.forEach(({ filename, task }) => {
-        const opt = document.createElement("option");
-        opt.value = filename;      // 例如 "claude-4.5-sonnet_xxx.json"
-        opt.textContent = task;    // 例如 "xxx"
-        this.taskSelector.appendChild(opt);
-      });
-  
-      if (tasks.length > 0) {
-        this.taskSelector.disabled = false;
+        // 统一刷新任务下拉
+        this.taskSelector.innerHTML = '<option value="">Select task...</option>';
+        this.taskSelector.disabled = true;
+      
+        const tasks = this.modelsData[model] || [];
+        for (const { filename, task } of tasks) {
+          const opt = document.createElement("option");
+          opt.value = filename;    // e.g. "claude-4.5-sonnet_merge-hf-datasets.json"
+          opt.textContent = task;  // e.g. "merge-hf-datasets"
+          this.taskSelector.appendChild(opt);
+        }
+        if (tasks.length > 0) this.taskSelector.disabled = false;
       }
-    }
   
     async loadTrajectoryByFilename(filename) {
       try {
