@@ -124,3 +124,49 @@
   align-items: center !important;
   gap: 6px !important;
 }
+
+/* ==== Minimal visibility fix (safe) ==== */
+
+/* 气泡容器本身可见、可滚动 */
+#messages-container {
+  display: block !important;
+  min-height: 180px !important;
+  max-height: calc(100vh - 260px) !important; /* 不顶布局 */
+  overflow: auto !important;
+}
+
+/* 气泡外观（不影响其他区域） */
+#messages-container .message {
+  margin: 10px 0 !important;
+  padding: 10px 12px !important;
+  border-radius: 10px !important;
+  background: #f7f7f8 !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,.05) !important;
+  color: #111 !important;
+  word-break: break-word !important;
+}
+
+#messages-container .message.user,
+#messages-container .message.human { background: #eaf2ff !important; }
+#messages-container .message.assistant,
+#messages-container .message.ai,
+#messages-container .message.model { background: #f4f4f5 !important; }
+
+#messages-container .message-meta { font-size: 12px !important; color: #666 !important; margin-bottom: 6px !important; }
+#messages-container .message-text { font-size: 14px !important; color: #111 !important; line-height: 1.6 !important; }
+
+/* 抵消“隐藏类” */
+#messages-container .message,
+#messages-container .message * {
+  visibility: visible !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+/* 状态徽标：只保证可见，不改变位置布局 */
+#task-status {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  color: #111 !important;
+}
