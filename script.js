@@ -498,6 +498,8 @@ class TrajectoryReplayer {
                     const match = taskOptions.find(opt => opt.value === filename);
                     if (match) {
                         this.taskSelector.value = filename;
+                        // 自动加载对应轨迹
+                        this.loadTrajectoryByFilename(filename);
                     }
                 }
             }
