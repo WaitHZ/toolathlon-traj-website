@@ -56,10 +56,16 @@ class TrajectoryReplayer {
         if (pathMatch && pathMatch[1]) {
             this.autoLoadTrajId = pathMatch[1];
         } else {
+            // 支持 /model_task 或 /model_task/ 这样的路径，如 /claude-4.5-sonnet_merge-hf-datasets
+            const modelTaskMatch = pathname.match(/^\/([^\/]+_[^\/]+)\/?$/);
+            if (modelTaskMatch && modelTaskMatch[1]) {
+                this.autoLoadTrajId = modelTaskMatch[1];
+            } else {
             // 方法2：从meta标签获取（服务器注入的）
             const metaTag = document.querySelector('meta[name="trajectory-id"]');
             if (metaTag) {
                 this.autoLoadTrajId = metaTag.getAttribute('content');
+            }
             }
         }
         
