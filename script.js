@@ -207,7 +207,7 @@ class TrajectoryReplayer {
   
     async loadTrajectoryByFilename(filename) {
       try {
-        this.currentModel = filename.replace(/_.+$/, "");
+        this.currentModel = filename.replace(/_.*$/, "");
         this.currentFilename = filename;
   
         const url = `/api/trajectory/${filename}`;
@@ -231,7 +231,8 @@ class TrajectoryReplayer {
         console.log("[trajectory raw]", data);
         this.processTrajectoryData(data, filename.replace(/\.json$/, ""));
         this.renderUpTo(this.currentIndex);
-        this.setStatus(`Loaded: ${filename} (${this.messages.length} msgs)`);
+        const pf = (this.currentData && (this.currentData.pass===true || this.currentData.pass===false)) ? (this.currentData.pass ? '✅ Correct' : '❌ Incorrect') : 'Loaded';
+      this.setStatus(`${pf} · ${filename} · ${this.messages.length} msgs`);
       } catch (e) {
         console.error("loadTrajectory failed:", e);
         this.setStatus("traj load failed");
@@ -332,16 +333,16 @@ class TrajectoryReplayer {
     }
   
     renderMessage(m) {
-      const container = document.createElement("div");
-      container.className = `message ${m.role} visible`;
-      const content = document.createElement("div");
-      content.className = "message-content";
+      const div = document.createElement("div");
+      div.className = `message ${m.role}`;
+      const meta = document.createElement("div");
+      meta.className = "message-meta";
+      meta.textContent = `${m.index + 1}. ${m.role}`;
       const body = document.createElement("div");
       body.className = "message-text";
       body.innerHTML = this.escapeHTML(m.content).replace(/\n/g, "<br/>");
-      content.appendChild(body);
-      container.appendChild(content);
-      return container;
+      div.appendChild(meta); div.appendChild(body);
+      return div;
     }
   
     escapeHTML(s) {
@@ -388,10 +389,7 @@ class TrajectoryReplayer {
       const total = this.messages.length || 0;
       const cur   = this.currentIndex || 0;
       if (this.progressText) this.progressText.textContent = total ? `${cur}/${total}` : "0/0";
-      if (this.progressBar)  {
-        const pct = total ? Math.round((cur / total) * 100) : 0;
-        try { this.progressBar.style.width = `${pct}%`; } catch(e) {}
-      }
+      if (this.progressBar)  this.progressBar.value = total ? Math.round((cur / total) * 100) : 0;
   
       if (this.playBtn)   this.playBtn.disabled   = !total || (this.isPlaying && !this.isPaused);
       if (this.pauseBtn)  this.pauseBtn.disabled  = !total || !this.isPlaying || this.isPaused;
@@ -400,18 +398,84 @@ class TrajectoryReplayer {
       if (this.showAllBtn)this.showAllBtn.disabled= !total || cur >= total;
     }
   
-    setStatus(msg) {
-      if (!this.taskStatus) return;
-      // 兼容 index.html 中内嵌结构与 display:none
-      try { this.taskStatus.style.display = ""; } catch(e) {}
-      const txtEl = this.taskStatus.querySelector?.(".task-status-text");
-      if (txtEl) txtEl.textContent = msg || ""; else this.taskStatus.textContent = msg || "";
+    setStatus(msg) { 
+      if (this.taskStatus) { 
+        const txt = msg || ""; 
+        this.taskStatus.textContent = txt; 
+        this.taskStatus.style.display = txt ? "" : "none"; 
+      } 
     }
   }
   
   /* 启动 */
   let trajectoryReplayer = null;
   window.addEventListener("DOMContentLoaded", () => { trajectoryReplayer = new TrajectoryReplayer(); });
+  
 
-// debug hotfix removed to restore polished UI
+/* ===== HOTFIX: robust container + visible styles + empty-state ===== */
+
+// 1) 更强健地拿到消息容器：支持多种常见选择器；最后兜底 body
+(function ensureMsgContainer() {
+    const pick = (sel) => document.querySelector(sel);
+    const cand = [
+      '#messages-container', '#messages', '.messages',
+      '#msg-container', '.msg-container', '#content', '.content'
+    ];
+    let el = cand.map(pick).find(Boolean);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'messages-container';
+      document.body.appendChild(el);
+    }
+    // 覆盖实例上的引用
+    if (window.trajectoryReplayer) {
+      window.trajectoryReplayer.msgContainer = el;
+    }
+    // 基本可见样式，避免“看不见”的情况
+    Object.assign(el.style, {
+      minHeight: '240px',
+      padding: '12px',
+      color: '#111',
+      background: '#fff',
+      lineHeight: '1.55',
+      fontFamily: 'system-ui, -apple-system, Segoe UI, Roboto, PingFang SC, Microsoft YaHei, sans-serif'
+    });
+  })();
+  
+  // 2) 如果解析后为 0 条，给出可视化提示（而不是空白）
+  (function patchEmptyRender() {
+    const R = window.trajectoryReplayer;
+    if (!R) return;
+    // 保存原方法
+    const _process = R.processTrajectoryData.bind(R);
+  
+    R.processTrajectoryData = function(raw, trajId) {
+      _process(raw, trajId);
+      try {
+        if (!Array.isArray(this.messages) || this.messages.length === 0) {
+          const topKeys = raw && typeof raw === 'object' ? Object.keys(raw).slice(0, 20) : [];
+          this.msgContainer.innerHTML =
+            `<div style="padding:10px;border:1px solid #ffe58f;background:#fffae6;border-radius:8px;color:#8b6d00">
+               未解析出可显示的对话内容（0 条）。<br/>
+               <small>文件：<code>${this.currentFilename||''}</code></small><br/>
+               <small>顶层字段：<code>${topKeys.join(', ')}</code></small>
+             </div>`;
+        }
+      } catch(e) {
+        console.warn('empty-state patch failed:', e);
+      }
+    };
+  })();
+  
+  // 3) 渲染一条“演示气泡”，用于判定是否是 CSS/容器问题（仅当容器为空时）
+  (function demoBubbleIfEmpty() {
+    const R = window.trajectoryReplayer;
+    if (!R || !R.msgContainer) return;
+    if (R.msgContainer.children.length === 0) {
+      const demo = document.createElement('div');
+      demo.style.cssText = 'padding:8px 10px;border:1px dashed #ddd;border-radius:8px;color:#333;background:#fafafa;margin:8px 0';
+      demo.textContent = '（调试占位）这里会显示对话。如果一直只看到这条占位，请刷新缓存或检查接口/解析。';
+      R.msgContainer.appendChild(demo);
+    }
+  })();
   

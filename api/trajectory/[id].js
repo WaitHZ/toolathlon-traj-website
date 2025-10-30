@@ -7,7 +7,6 @@ export default function handler(req, res) {
 
   const candidates = [
     path.join(process.cwd(), 'trajs', filename),
-    path.join(process.cwd(), 'public', 'trajs', filename),
     path.join(process.cwd(), filename),    // 兜底
   ];
   for (const p of candidates) {
