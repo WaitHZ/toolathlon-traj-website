@@ -7,16 +7,20 @@ export default function handler(req, res) {
     ? fs.readdirSync(trajDir).filter(f => f.endsWith('.json'))
     : [];
 
-  // 返回 { models: { "<model>": [ { filename, task }, ... ] } }
   const models = {};
+  const tasks = new Set();
+
   for (const f of files) {
-    const base = f.replace(/\.json$/, ''); // 例如 "claude-4.5-sonnet_ab-testing"
-    const underscore = base.indexOf('_');
-    const model = underscore === -1 ? base : base.slice(0, underscore);
-    const task  = underscore === -1 ? 'unknown' : base.slice(underscore + 1);
+    const base = f.replace(/\.json$/,'');   // xxx_yyy
+    const [model, ...rest] = base.split('_');
+    const task = rest.join('_') || 'unknown';
+    tasks.add(task);
     if (!models[model]) models[model] = [];
-    models[model].push({ filename: f, task });
+    models[model].push(task);
   }
 
-  res.status(200).json({ models });
+  res.status(200).json({
+    models,                    // { model: [task, ...] }
+    tasks: [...tasks].sort(),  // 所有任务
+  });
 }
