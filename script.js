@@ -341,6 +341,8 @@ class TrajectoryReplayer {
       body.className = "message-text";
       body.innerHTML = this.escapeHTML(m.content).replace(/\n/g, "<br/>");
       div.appendChild(meta); div.appendChild(body);
+      // 使消息在现有 CSS 下可见
+      try { div.classList.add("visible"); } catch(e) {}
       return div;
     }
   
@@ -388,7 +390,10 @@ class TrajectoryReplayer {
       const total = this.messages.length || 0;
       const cur   = this.currentIndex || 0;
       if (this.progressText) this.progressText.textContent = total ? `${cur}/${total}` : "0/0";
-      if (this.progressBar)  this.progressBar.value = total ? Math.round((cur / total) * 100) : 0;
+      if (this.progressBar)  {
+        const pct = total ? Math.round((cur / total) * 100) : 0;
+        try { this.progressBar.style.width = `${pct}%`; } catch(e) {}
+      }
   
       if (this.playBtn)   this.playBtn.disabled   = !total || (this.isPlaying && !this.isPaused);
       if (this.pauseBtn)  this.pauseBtn.disabled  = !total || !this.isPlaying || this.isPaused;
@@ -397,7 +402,13 @@ class TrajectoryReplayer {
       if (this.showAllBtn)this.showAllBtn.disabled= !total || cur >= total;
     }
   
-    setStatus(msg) { if (this.taskStatus) this.taskStatus.textContent = msg || ""; }
+    setStatus(msg) {
+      if (!this.taskStatus) return;
+      // 兼容 index.html 中内嵌结构与 display:none
+      try { this.taskStatus.style.display = ""; } catch(e) {}
+      const txtEl = this.taskStatus.querySelector?.(".task-status-text");
+      if (txtEl) txtEl.textContent = msg || ""; else this.taskStatus.textContent = msg || "";
+    }
   }
   
   /* 启动 */
