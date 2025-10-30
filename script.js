@@ -11,6 +11,7 @@ class TrajectoryReplayer {
         this.autoLoadTrajId = null; // 从URL自动加载的轨迹ID
         this.currentModel = 'claude'; // 当前轨迹使用的模型，默认为 claude
         this.isMobile = this.detectMobile(); // 检测是否为移动端
+        this.loadRequestCounter = 0; // 防抖：仅处理最新的加载请求
         
         this.initializeElements();
         // 先尝试隐藏选择框（如果需要）
@@ -69,10 +70,14 @@ class TrajectoryReplayer {
             }
         }
         
-        // 如果找到轨迹ID，自动加载（不隐藏选择器）
+        // 如果找到轨迹ID：
+        // - 纯数字ID：立即加载
+        // - model_task 形式：延后到模型/任务下拉预选时加载，避免重复加载
         if (this.autoLoadTrajId) {
-            // 立即加载轨迹数据
-            this.loadTrajectoryById(this.autoLoadTrajId);
+            const isNumeric = /^\d+$/.test(this.autoLoadTrajId);
+            if (isNumeric) {
+                this.loadTrajectoryById(this.autoLoadTrajId);
+            }
         }
     }
     
@@ -198,6 +203,7 @@ class TrajectoryReplayer {
     // 根据ID加载轨迹
     async loadTrajectoryById(trajId) {
         const filename = `${trajId}.json`;
+        const requestId = ++this.loadRequestCounter;
         
         // 清除之前的轨迹
         this.clearMessages();
@@ -219,6 +225,7 @@ class TrajectoryReplayer {
             }
             
             const data = await response.json();
+            if (requestId !== this.loadRequestCounter) return; // 过期请求，忽略
             this.currentData = data;
             // 传递 trajId 给 processTrajectoryData
             this.processTrajectoryData(data, trajId);
@@ -498,7 +505,7 @@ class TrajectoryReplayer {
                     const match = taskOptions.find(opt => opt.value === filename);
                     if (match) {
                         this.taskSelector.value = filename;
-                        // 自动加载对应轨迹
+                        // 自动加载对应轨迹（作为唯一加载入口）
                         this.loadTrajectoryByFilename(filename);
                     }
                 }
@@ -617,6 +624,7 @@ class TrajectoryReplayer {
     
     // 根据文件名加载轨迹
     async loadTrajectoryByFilename(filename) {
+        const requestId = ++this.loadRequestCounter;
         // Clear previous trajectory when selecting a new one
         this.clearMessages();
         this.currentIndex = 0;
@@ -637,6 +645,7 @@ class TrajectoryReplayer {
             }
             
             const data = await response.json();
+            if (requestId !== this.loadRequestCounter) return; // 过期请求，忽略
             this.currentData = data;
             // 传递文件名（不含.json）给 processTrajectoryData
             const fileNameWithoutExt = filename.replace(/\.json$/, '');
@@ -651,6 +660,7 @@ class TrajectoryReplayer {
 
     // Load trajectory data
     async loadTrajectory() {
+        const requestId = ++this.loadRequestCounter;
         const selectedFile = this.trajFileSelect.value;
         
         // Clear previous trajectory when selecting a new one
@@ -678,6 +688,7 @@ class TrajectoryReplayer {
             }
             
             const data = await response.json();
+            if (requestId !== this.loadRequestCounter) return; // 过期请求，忽略
             this.currentData = data;
             // 传递文件名（不含.json）给 processTrajectoryData
             const fileNameWithoutExt = selectedFile.replace(/\.json$/, '');
