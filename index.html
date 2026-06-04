@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LLM Trajectory Replay</title>
     <link rel="icon" type="image/png" href="ico.png">
+    <!-- Apply saved theme before paint to avoid flash; otherwise follow system via CSS -->
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('theme');
+                if (saved === 'dark' || saved === 'light') {
+                    document.documentElement.setAttribute('data-theme', saved);
+                }
+            } catch (e) {}
+        })();
+    </script>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
@@ -53,6 +64,9 @@
             </button>
         </div>
         <div class="top-bar-right">
+            <button id="theme-toggle" class="theme-toggle" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+                <span class="theme-toggle-icon" aria-hidden="true"></span>
+            </button>
             <div class="progress-container">
                 <div class="progress-bar">
                     <div id="progress" class="progress-fill"></div>
@@ -86,5 +100,37 @@
     </div>
 
     <script src="script.js"></script>
+    <script>
+        (function () {
+            var btn = document.getElementById('theme-toggle');
+            if (!btn) return;
+            var mq = window.matchMedia('(prefers-color-scheme: dark)');
+            function effectiveTheme() {
+                var saved = null;
+                try { saved = localStorage.getItem('theme'); } catch (e) {}
+                if (saved === 'dark' || saved === 'light') return saved;
+                return mq.matches ? 'dark' : 'light';
+            }
+            function updateIcon() {
+                var dark = effectiveTheme() === 'dark';
+                btn.classList.toggle('is-dark', dark);
+                var label = dark ? 'Switch to light mode' : 'Switch to dark mode';
+                btn.title = label;
+                btn.setAttribute('aria-label', label);
+            }
+            btn.addEventListener('click', function () {
+                var next = effectiveTheme() === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', next);
+                try { localStorage.setItem('theme', next); } catch (e) {}
+                updateIcon();
+            });
+            mq.addEventListener('change', function () {
+                var saved = null;
+                try { saved = localStorage.getItem('theme'); } catch (e) {}
+                if (saved !== 'dark' && saved !== 'light') updateIcon();
+            });
+            updateIcon();
+        })();
+    </script>
 </body>
 </html>

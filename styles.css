@@ -1426,3 +1426,237 @@ body {
         width: 100%;
     }
 }
+/* ==========================================================================
+   深色模式 (Dark mode)
+   - 默认跟随系统：未手动选择时由 prefers-color-scheme 决定
+   - 手动切换：html[data-theme="dark"|"light"] 覆盖系统设置（记忆在 localStorage）
+   实现方式：用 CSS 变量集中管理颜色，浅色取值与原有字面量一致，
+   仅在深色上下文中改写变量，下方的应用规则按源码顺序覆盖原有字面量。
+   ========================================================================== */
+
+/* 浅色（默认）变量 —— 取值与原始样式保持一致 */
+:root {
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --surface-2: #f5f5f5;
+    --surface-3: #f8f9fa;
+    --border: #e0e0e0;
+    --border-2: #e9ecef;
+    --border-input: #ddd;
+    --text: #333333;
+    --text-2: #666666;
+    --text-3: #999999;
+    --text-strong: #1a1a1a;
+    --heading: #2c3e50;
+    --code-bg: rgba(0, 0, 0, 0.05);
+    --code-bg-inline: rgba(0, 0, 0, 0.1);
+    --table-border: rgba(0, 0, 0, 0.1);
+    --hover: rgba(0, 0, 0, 0.05);
+    --shadow: rgba(0, 0, 0, 0.1);
+    --result-bg: rgba(0, 123, 255, 0.05);
+    --result-border: rgba(0, 123, 255, 0.2);
+    --scrollbar-track: #f1f1f1;
+    --scrollbar-thumb: #c1c1c1;
+    --scrollbar-thumb-hover: #a8a8a8;
+    --ok-bg: #e8f5e9;
+    --ok-border: #c8e6c9;
+    --warn-bg: #fff9e6;
+    --warn-border: #ffe082;
+    --err-bg: #ffebee;
+    --err-border: #ffcdd2;
+}
+
+/* 深色取值 */
+:root[data-theme="dark"] {
+    --bg: #121212;
+    --surface: #1e1e1e;
+    --surface-2: #262626;
+    --surface-3: #232323;
+    --border: #3a3a3a;
+    --border-2: #333333;
+    --border-input: #4a4a4a;
+    --text: #e4e4e4;
+    --text-2: #a8a8a8;
+    --text-3: #808080;
+    --text-strong: #f0f0f0;
+    --heading: #d8dee6;
+    --code-bg: rgba(255, 255, 255, 0.06);
+    --code-bg-inline: rgba(255, 255, 255, 0.1);
+    --table-border: rgba(255, 255, 255, 0.12);
+    --hover: rgba(255, 255, 255, 0.06);
+    --shadow: rgba(0, 0, 0, 0.4);
+    --result-bg: rgba(0, 123, 255, 0.12);
+    --result-border: rgba(0, 123, 255, 0.3);
+    --scrollbar-track: #1e1e1e;
+    --scrollbar-thumb: #3a3a3a;
+    --scrollbar-thumb-hover: #4a4a4a;
+    --ok-bg: #16261a;
+    --ok-border: #1f4029;
+    --warn-bg: #2b2410;
+    --warn-border: #4d4012;
+    --err-bg: #2b1618;
+    --err-border: #4d2025;
+}
+
+/* 跟随系统：未手动选择浅色时应用同一套深色取值 */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg: #121212;
+        --surface: #1e1e1e;
+        --surface-2: #262626;
+        --surface-3: #232323;
+        --border: #3a3a3a;
+        --border-2: #333333;
+        --border-input: #4a4a4a;
+        --text: #e4e4e4;
+        --text-2: #a8a8a8;
+        --text-3: #808080;
+        --text-strong: #f0f0f0;
+        --heading: #d8dee6;
+        --code-bg: rgba(255, 255, 255, 0.06);
+        --code-bg-inline: rgba(255, 255, 255, 0.1);
+        --table-border: rgba(255, 255, 255, 0.12);
+        --hover: rgba(255, 255, 255, 0.06);
+        --shadow: rgba(0, 0, 0, 0.4);
+        --result-bg: rgba(0, 123, 255, 0.12);
+        --result-border: rgba(0, 123, 255, 0.3);
+        --scrollbar-track: #1e1e1e;
+        --scrollbar-thumb: #3a3a3a;
+        --scrollbar-thumb-hover: #4a4a4a;
+        --ok-bg: #16261a;
+        --ok-border: #1f4029;
+        --warn-bg: #2b2410;
+        --warn-border: #4d4012;
+        --err-bg: #2b1618;
+        --err-border: #4d2025;
+    }
+}
+
+/* 平滑切换 */
+body {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* --- 应用变量（按源码顺序覆盖原有字面量，浅色下取值不变）--- */
+body { background: var(--bg); color: var(--text); }
+
+.top-bar { background: var(--surface); border-bottom-color: var(--border); box-shadow: 0 1px 3px var(--shadow); }
+
+.file-selector,
+.model-selector,
+.task-selector { background: var(--surface); border-color: var(--border-input); color: var(--text); }
+.task-selector:disabled { background: var(--surface-2); color: var(--text-3); }
+.task-selector:disabled:focus { border-color: var(--border-input); }
+
+.progress-bar { background: var(--border); }
+.progress-text { color: var(--text-2); }
+
+.welcome-message { color: var(--text-2); }
+.welcome-message p { color: var(--text-3); }
+
+.failure-banner { background: var(--surface-2); color: var(--text-2); border-color: var(--border); box-shadow: 0 1px 3px var(--shadow); }
+
+.message-content { background: var(--surface); border-color: var(--border); box-shadow: 0 1px 3px var(--shadow); }
+.message.user .message-content { background: var(--surface); color: var(--text); border-color: var(--border-2); }
+.message.system .message-content { background: var(--surface-2); color: var(--text-2); border-color: var(--border); }
+
+.message-text code { background: var(--code-bg-inline); }
+.message-text pre { background: var(--code-bg); border-color: var(--table-border); }
+.message-text pre code { color: var(--text); }
+.message-text th { background: var(--code-bg); }
+.message-text th,
+.message-text td { border-color: var(--table-border); }
+.message-text hr { border-top-color: var(--table-border); }
+.message.user .message-text code { background: var(--surface-3); }
+.message.user .message-text pre { background: var(--surface-3); border-color: var(--border-2); }
+.message.user .message-text pre code { color: var(--text); }
+.message.user .message-text th,
+.message.user .message-text td { border-color: var(--border-2); }
+.message.user .message-text th { background: var(--surface-3); }
+.message.user .message-text hr { border-top-color: var(--border-2); }
+
+.tool-calls-block { background: var(--surface-3); border-color: var(--border-2); }
+.tool-call-item { border-bottom-color: var(--border-2); }
+.tool-call-header:hover { background: var(--hover); }
+.tool-name { color: var(--text); }
+.tool-status { background: var(--border-2); color: var(--text-2); }
+.tool-status.status-calling { background: var(--border-2); color: var(--text-2); }
+.tool-call-details { border-top-color: var(--border-2); }
+.tool-section-title { color: var(--text-2); }
+.tool-args,
+.tool-result { background: var(--code-bg); border-color: var(--border-2); }
+.tool-result { background: var(--result-bg); border-color: var(--result-border); }
+
+.tool-calls-summary-container { background: var(--surface-3); border-color: var(--border); }
+.tool-call-summary .tool-name { color: var(--text); }
+
+.tool-sidebar { border-left-color: var(--border); }
+.sidebar-header { background: var(--surface-3); border-bottom-color: var(--border); }
+.sidebar-header h3 { color: var(--text); }
+.sidebar-header h3 .tool-call-detail-name { color: var(--heading); }
+.close-btn { color: var(--text-2); }
+.close-btn:hover { background-color: var(--border); }
+.tool-call-detail { background: var(--surface); border-color: var(--border); }
+.tool-call-detail-header { background: var(--surface-3); border-bottom-color: var(--border); }
+.tool-call-detail-name { color: var(--heading); }
+.tool-sidebar .tool-args,
+.tool-sidebar .tool-result { background: var(--surface-3); border-color: var(--border); color: var(--text); }
+.tool-sidebar .tool-python-code { background: var(--surface-3); border-color: var(--border); color: var(--text); }
+.tool-sidebar .tool-result-success { background: var(--ok-bg) !important; border-color: var(--ok-border) !important; }
+.tool-sidebar .tool-result-warning { background: var(--warn-bg) !important; border-color: var(--warn-border) !important; }
+.tool-sidebar .tool-result-error { background: var(--err-bg) !important; border-color: var(--err-border) !important; }
+
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+
+/* Prism 代码高亮在深色下的基础底色（语法颜色本身在深色下可读）*/
+:root[data-theme="dark"] pre[class*="language-"],
+:root[data-theme="dark"] code[class*="language-"] {
+    background: #1b1b1b;
+    color: #e4e4e4;
+    text-shadow: none;
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) pre[class*="language-"],
+    :root:not([data-theme="light"]) code[class*="language-"] {
+        background: #1b1b1b;
+        color: #e4e4e4;
+        text-shadow: none;
+    }
+}
+
+/* --- 主题切换按钮 --- */
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--border-input);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+    background: var(--surface-2);
+    border-color: var(--text-3);
+}
+
+.theme-toggle-icon {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.theme-toggle-icon::before {
+    content: '🌙';
+}
+
+.theme-toggle.is-dark .theme-toggle-icon::before {
+    content: '☀️';
+}
